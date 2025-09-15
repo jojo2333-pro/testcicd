@@ -1,4 +1,6 @@
-stages: [build, deploy]
+stages:
+  - build
+  - deploy
 
 image: node:20
 
@@ -13,14 +15,14 @@ cache:
     - node_modules/
     - .pnpm-store/
 
-before_scripts:
+before_script:
   - corepack enable
   - pnpm config set store-dir .pnpm-store
   - pnpm install --frozen-lockfile
 
 build_vue: 
   stage: build
-  scripts:
+  script:
     - BASE_PATH=/apps/vue-demo/ pnpm --filter vue-demo build
   artifacts:
     paths: [web/vue-demo/dist]
@@ -43,10 +45,9 @@ build_main:
     - cp -r web/vue-demo/dist/* _site/apps/vue-demo/
     - cp -r web/react-demo/dist/* _site/apps/react-demo/
     - echo '{ "vue-app": {"url": "/apps/vue-demo/"}, "react-app": {"url": "/apps/react-demo/" }}' > _site/micro-apps.json
-
-artifacts:
-  paths: [_site]
-  expire_in: 1 week
+  artifacts:
+    paths: [_site]
+    expire_in: 1 week
 
 pages:
   stage: deploy
@@ -56,3 +57,4 @@ pages:
     paths: [public]
   only:
     - main
+    - master
