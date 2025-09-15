@@ -1,64 +1,30 @@
-stages: [build, deploy]
 image: node:20
 
-variables: 
+stages: [deploy]
+
+variables:
   PNPM_HOME: /root/.local/share/pnpm
   PATH: $PNPM_HOME:$PATH
   NODE_ENV: production
 
-cache:
-  key: ${CI_COMMIT_REF_SLUG}
-  paths: 
-    - .pnpm-store/
-
 before_script:
   - corepack enable
-  - pnpm config set store-dir .pnpm-store
   - pnpm install --frozen-lockfile
 
-build_vue: 
-  stage: build
-  script:
-    - BASE_PATH=/apps/vue-demo/ pnpm --filter vue-demo build
-  artifacts:
-    paths: [web/vue-demo/dist]
-    expire_in: 1 week
-
-build_react:
-  stage: build
-  script: 
-    - BASE_PATH=/apps/react-demo/ pnpm --filter react-demo build
-  artifacts:
-    paths: [web/react-demo/dist]
-    expire_in: 1 week
-
-build_main:
-  stage: build
-  needs:
-    - job: build_vue
-      artifacts: true
-    - job: build_react
-      artifacts: true
-  script: 
-    - pnpm --filter main build
-    - mkdir -p _site/apps/vue-demo _site/apps/react-demo
-    - cp -r main/dist/* _site/
-    - cp -r web/vue-demo/dist/* _site/apps/vue-demo/
-    - cp -r web/react-demo/dist/* _site/apps/react-demo/
-    - echo '{ "vue-app": {"url": "/apps/vue-demo/"}, "react-app": {"url": "/apps/react-demo/" }}' > _site/micro-apps.json
-  artifacts:
-    paths: [_site]
-    expire_in: 1 week
-
-pages:
+pages:                        # Pages 必须叫 pages
   stage: deploy
-  needs: 
-    - job: build_main
-      artifacts: true
   script:
-    - mv _site public
+    - BASE_PATH=/apps/vue-demo/   pnpm --filter ./web/vue-demo   build
+    - BASE_PATH=/apps/react-demo/ pnpm --filter ./web/react-demo build
+    - pnpm --filter ./main build
+    - mkdir -p public/apps/vue-demo public/apps/react-demo
+    - cp -r main/dist/*            public/
+    - cp -r web/vue-demo/dist/*    public/apps/vue-demo/
+    - cp -r web/react-demo/dist/*  public/apps/react-demo/
+    - printf '%s\n' '{ "vue-demo": { "url": "/apps/vue-demo/" }, "react-demo": { "url": "/apps/react-demo/" } }' > public/micro-apps.json
   artifacts:
-    paths: [public]
+    paths:
+      - public
   only:
     - main
     - master
