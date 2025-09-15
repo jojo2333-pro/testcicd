@@ -1,7 +1,4 @@
-stages:
-  - build
-  - deploy
-
+stages: [build, deploy]
 image: node:20
 
 variables: 
@@ -12,7 +9,6 @@ variables:
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths: 
-    - node_modules/
     - .pnpm-store/
 
 before_script:
@@ -38,6 +34,11 @@ build_react:
 
 build_main:
   stage: build
+  needs:
+    - job: build_vue
+      artifacts: true
+    - job: build_react
+      artifacts: true
   script: 
     - pnpm --filter main build
     - mkdir -p _site/apps/vue-demo _site/apps/react-demo
@@ -51,6 +52,9 @@ build_main:
 
 pages:
   stage: deploy
+  needs: 
+    - job: build_main
+      artifacts: true
   script:
     - mv _site public
   artifacts:
