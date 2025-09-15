@@ -1,0 +1,58 @@
+stages: [build, deploy]
+
+image: node:20
+
+variables: 
+  PNPM_HOME: /root/.local/share/pnpm
+  PATH: $PNPM_HOME:$PATH
+  NODE_ENV: production
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths: 
+    - node_modules/
+    - .pnpm-store/
+
+before_scripts:
+  - corepack enable
+  - pnpm config set store-dir .pnpm-store
+  - pnpm install --frozen-lockfile
+
+build_vue: 
+  stage: build
+  scripts:
+    - BASE_PATH=/apps/vue-demo/ pnpm --filter vue-demo build
+  artifacts:
+    paths: [web/vue-demo/dist]
+    expire_in: 1 week
+
+build_react:
+  stage: build
+  script: 
+    - BASE_PATH=/apps/react-demo/ pnpm --filter react-demo build
+  artifacts:
+    paths: [web/react-demo/dist]
+    expire_in: 1 week
+
+build_main:
+  stage: build
+  script: 
+    - pnpm --filter main build
+    - mkdir -p _site/apps/vue-demo _site/apps/react-demo
+    - cp -r main/dist/* _site/
+    - cp -r web/vue-demo/dist/* _site/apps/vue-demo/
+    - cp -r web/react-demo/dist/* _site/apps/react-demo/
+    - echo '{ "vue-app": {"url": "/apps/vue-demo/"}, "react-app": {"url": "/apps/react-demo/" }}' > _site/micro-apps.json
+
+artifacts:
+  paths: [_site]
+  expire_in: 1 week
+
+pages:
+  stage: deploy
+  script:
+    - mv _site public
+  artifacts:
+    paths: [public]
+  only:
+    - main
