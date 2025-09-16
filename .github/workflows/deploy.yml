@@ -1,0 +1,76 @@
+name: Deploy Micro Frontends (Pages)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with: { version: 9 }
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install deps (workspace)
+        run: pnpm install --frozen-lockfile
+
+      # 构建两个子应用：指定 BASE_PATH（发布到 /apps/<name>/）
+      - name: Build vue-demo
+        run: BASE_PATH=/apps/vue-demo/ pnpm --filter ./web/vue-demo build
+
+      - name: Build react-demo
+        run: BASE_PATH=/apps/react-demo/ pnpm --filter ./web/react-demo build
+
+      # 构建主应用
+      - name: Build main
+        run: pnpm --filter ./main build
+
+      # 组装站点目录
+      - name: Assemble site
+        run: |
+          mkdir -p _site/apps/vue-demo _site/apps/react-demo
+          cp -r main/dist/*           _site/
+          cp -r web/vue-demo/dist/*   _site/apps/vue-demo/
+          cp -r web/react-demo/dist/* _site/apps/react-demo/
+          # 运行时配置：主应用会 fetch('/micro-apps.json') 读取子应用地址
+          cat > _site/micro-apps.json <<'JSON'
+          {
+            "vue-demo":   { "url": "/apps/vue-demo/" },
+            "react-demo": { "url": "/apps/react-demo/" }
+          }
+          JSON
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
