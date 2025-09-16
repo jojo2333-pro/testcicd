@@ -7,7 +7,7 @@ import { preloadApp } from 'wujie'
 const apps = reactive({})
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/')
 Object.assign(apps, await fetch(`${base}micro-apps.json`).then(r => r.json()))
-await loadConfig()
+// await loadConfig()
 
 
 preloadApp({
