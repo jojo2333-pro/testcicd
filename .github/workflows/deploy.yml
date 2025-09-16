@@ -14,6 +14,9 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+env:
+  REPO: ${{github.event.repository.name}}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,14 +39,14 @@ jobs:
 
       # 构建两个子应用：指定 BASE_PATH（发布到 /apps/<name>/）
       - name: Build vue-demo
-        run: BASE_PATH=/apps/vue-demo/ pnpm --filter ./web/vue-demo build
+        run: BASE_PATH=/${{env.REPO}}/apps/vue-demo/ pnpm --filter ./web/vue-demo build
 
       - name: Build react-demo
-        run: BASE_PATH=/apps/react-demo/ pnpm --filter ./web/react-demo build
+        run: BASE_PATH=/${{env.REPO}}/apps/react-demo/ pnpm --filter ./web/react-demo build
 
       # 构建主应用
       - name: Build main
-        run: pnpm --filter ./main build
+        run: BASE_PATH=/${{env.REPO}}/ pnpm --filter ./main build
 
       # 组装站点目录
       - name: Assemble site
@@ -55,8 +58,8 @@ jobs:
           # 运行时配置：主应用会 fetch('/micro-apps.json') 读取子应用地址
           cat > _site/micro-apps.json <<'JSON'
           {
-            "vue-demo":   { "url": "/apps/vue-demo/" },
-            "react-demo": { "url": "/apps/react-demo/" }
+            "vue-demo":   { "url": "/${{env.REPO}}/apps/vue-demo/" },
+            "react-demo": { "url": "/${{env.REPO}}/apps/react-demo/" }
           }
           JSON
 

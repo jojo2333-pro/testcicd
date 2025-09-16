@@ -4,11 +4,11 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import WuJieVue from 'wujie-vue3'
 import { preloadApp } from 'wujie'
-
+const base = import.meta.env.BASE_URL
 let apps = {}
 
 async function loadConfig() {
-    apps = await fetch('/micro-apps.json', {cache: 'no-store'}).then(r=>r.json())
+    apps = await fetch(`${base}/micro-apps.json`, {cache: 'no-store'}).then(r=>r.json())
 }
 
 await loadConfig()
