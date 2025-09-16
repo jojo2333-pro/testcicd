@@ -1,16 +1,12 @@
 import './assets/main.css'
 
-import { createApp } from 'vue'
+import { createApp, reactive } from 'vue'
 import App from './App.vue'
 import WuJieVue from 'wujie-vue3'
 import { preloadApp } from 'wujie'
-const base = import.meta.env.BASE_URL
-let apps = {}
-
-async function loadConfig() {
-    apps = await fetch(`${base}/micro-apps.json`, {cache: 'no-store'}).then(r=>r.json())
-}
-
+const apps = reactive({})
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/')
+Object.assign(apps, await fetch(`${base}micro-apps.json`).then(r => r.json()))
 await loadConfig()
 
 
@@ -24,4 +20,4 @@ preloadApp({
     url: apps['react-demo'].url
 })
 
-createApp(App).use(WuJieVue).mount('#app')
+createApp(App).use(WuJieVue).provide('apps', apps).mount('#app')
