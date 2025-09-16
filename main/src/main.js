@@ -6,9 +6,10 @@ import WuJieVue from 'wujie-vue3'
 import { preloadApp } from 'wujie'
 const apps = reactive({})
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/')
+const name = '122'
 Object.assign(apps, await fetch(`${base}micro-apps.json`).then(r => r.json()))
-// await loadConfig()
 
+console.log(name)
 
 preloadApp({
     name: 'vue-demo',
