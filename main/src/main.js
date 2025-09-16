@@ -2,7 +2,8 @@ import './assets/main.css'
 
 import { createApp } from 'vue'
 import App from './App.vue'
-import WuJieVue , { preloadApp } from 'wujie-vue3'
+import WuJieVue from 'wujie-vue3'
+import { preloadApp } from 'wujie'
 
 let apps = {}
 
