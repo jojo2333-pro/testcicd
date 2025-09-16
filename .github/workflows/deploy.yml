@@ -58,8 +58,8 @@ jobs:
           # 运行时配置：主应用会 fetch('/micro-apps.json') 读取子应用地址
           cat > _site/micro-apps.json <<'JSON'
           {
-            "vue-demo":   { "url": "/${{env.REPO}}/apps/vue-demo/" },
-            "react-demo": { "url": "/${{env.REPO}}/apps/react-demo/" }
+            "vue-demo":   { "url": "/${REPO}/apps/vue-demo/" },
+            "react-demo": { "url": "/${REPO}/apps/react-demo/" }
           }
           JSON
 
