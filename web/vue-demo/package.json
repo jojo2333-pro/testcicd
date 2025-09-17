@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:ci": "cross-env BASE_PATH=/${REPO}/apps/$npm_package_name/ vite build",
+    "clean": "rimraf dist"
   },
   "dependencies": {
     "vue": "^3.5.18"

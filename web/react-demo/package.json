@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:ci": "cross-env BASE_PATH=/$REPO/apps/$npm_package_name/ vite build",
+    "clean": "rimraf dist"
   },
   "dependencies": {
     "react": "^19.1.1",

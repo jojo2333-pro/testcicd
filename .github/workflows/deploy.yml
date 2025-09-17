@@ -1,4 +1,4 @@
-name: Deploy Micro Frontends (Pages)
+name: Deploy Micro Frontends (Turbo + Pages)
 
 on:
   push:
@@ -11,62 +11,71 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: pages
+  cancel-in-progress: true
 
 env:
-  REPO: ${{github.event.repository.name}}
+  REPO: ${{ github.event.repository.name }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
 
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with: { version: 9 }
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
+          cache: pnpm
+
+      # 缓存 turbo 与 pnpm store
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ github.ref }}-
+            turbo-${{ runner.os }}-
+      - name: Configure pnpm store
+        run: pnpm config set store-dir .pnpm-store
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: .pnpm-store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
 
       - name: Install deps (workspace)
         run: pnpm install --frozen-lockfile
 
-      # 构建两个子应用：指定 BASE_PATH（发布到 /apps/<name>/）
-      - name: Build vue-demo
-        run: BASE_PATH=/${{env.REPO}}/apps/vue-demo/ pnpm --filter ./web/vue-demo build
+      # 一条命令构建全部：turbo 会并行并做缓存
+      - name: Turbo build (CI)
+        run: pnpm build:ci
 
-      - name: Build react-demo
-        run: BASE_PATH=/${{env.REPO}}/apps/react-demo/ pnpm --filter ./web/react-demo build
-
-      # 构建主应用
-      - name: Build main
-        run: BASE_PATH=/${{env.REPO}}/ pnpm --filter ./main build
-
-      # 组装站点目录
+      # 组装站点
       - name: Assemble site
         run: |
           mkdir -p _site/apps/vue-demo _site/apps/react-demo
           cp -r main/dist/*           _site/
           cp -r web/vue-demo/dist/*   _site/apps/vue-demo/
           cp -r web/react-demo/dist/* _site/apps/react-demo/
-          # 运行时配置：主应用会 fetch('/micro-apps.json') 读取子应用地址
-          cat > _site/micro-apps.json <<'JSON'
+          cat > _site/micro-apps.json <<EOF
           {
-            "vue-demo":   { "url": "/${{env.REPO}}/apps/vue-demo/" },
-            "react-demo": { "url": "/${{env.REPO}}/apps/react-demo/" }
+            "vue-demo":   { "url": "/$REPO/apps/vue-demo/" },
+            "react-demo": { "url": "/$REPO/apps/react-demo/" }
           }
-          JSON
+          EOF
+          cp _site/index.html _site/404.html
+          echo "== micro-apps.json ==" && cat _site/micro-apps.json
 
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: _site }
 
   deploy:
     runs-on: ubuntu-latest
