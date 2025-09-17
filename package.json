@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "vite",
-    "build": "vite build",
-    "build:ci": "cross-env BASE_PATH=/${REPO}/ vite build",
-    "clean": "rimraf dist"
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "build:ci": "turbo run build --filter=...[HEAD]", 
+    "clean": "turbo run clean && rimraf node_modules .turbo"
   },
   "keywords": [],
   "author": "",
