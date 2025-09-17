@@ -66,18 +66,18 @@ jobs:
       # 组装站点
       - name: Assemble site
         run: |
-          mkdir -p _site/apps/vue-demo _site/apps/react-demo
-          cp -r main/dist/*           _site/
-          cp -r web/vue-demo/dist/*   _site/apps/vue-demo/
-          cp -r web/react-demo/dist/* _site/apps/react-demo/
-          cat > _site/micro-apps.json <<EOF
-          {
-            "vue-demo":   { "url": "/$REPO/apps/vue-demo/" },
-            "react-demo": { "url": "/$REPO/apps/react-demo/" }
-          }
-          EOF
-          cp _site/index.html _site/404.html
-          echo "== micro-apps.json ==" && cat _site/micro-apps.json
+              mkdir -p _site/apps/vue-demo _site/apps/react-demo
+              [ -d main/dist ] && cp -r main/dist/* _site/ || (echo "main/dist missing"; exit 1)
+              [ -d web/vue-demo/dist ] && cp -r web/vue-demo/dist/* _site/apps/vue-demo/ || (echo "vue-demo/dist missing"; exit 1)
+              [ -d web/react-demo/dist ] && cp -r web/react-demo/dist/* _site/apps/react-demo/ || (echo "react-demo/dist missing"; exit 1)
+              cat > _site/micro-apps.json <<EOF
+              {
+                "vue-demo":   { "url": "/$REPO/apps/vue-demo/" },
+                "react-demo": { "url": "/$REPO/apps/react-demo/" }
+              }
+              EOF
+              cp _site/index.html _site/404.html
+              echo "== micro-apps.json ==" && cat _site/micro-apps.json
 
       - uses: actions/upload-pages-artifact@v3
         with:

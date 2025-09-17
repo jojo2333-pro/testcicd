@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:ci": "cross-env BASE_PATH=/$REPO/ vite build",
     "preview": "vite preview"
   },
   "dependencies": {
