@@ -25,17 +25,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 👇 这里跟 package.json 保持一致，pnpm 10.11.1
+      # ↘ 与 package.json 的 packageManager 版本一致
       - uses: pnpm/action-setup@v4
         with:
           version: 10.11.1
 
+      # ↘ 内置 pnpm 缓存：自动根据 pnpm-lock.yaml 缓存/还原
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
+          cache-dependency-path: '**/pnpm-lock.yaml'
 
-      # 缓存 turbo 与 pnpm store
+      # ↘ 仅缓存 turbo（提前创建目录避免 Path Validation 报警）
+      - name: Prepare turbo cache dir
+        run: mkdir -p .turbo
+
       - name: Cache turbo
         uses: actions/cache@v4
         with:
@@ -45,39 +50,39 @@ jobs:
             turbo-${{ runner.os }}-${{ github.ref }}-
             turbo-${{ runner.os }}-
 
-      - name: Configure pnpm store
-        run: pnpm config set store-dir .pnpm-store
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: .pnpm-store
-          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            pnpm-${{ runner.os }}-
-
       - name: Install deps (workspace)
         run: pnpm install --frozen-lockfile
 
-      # 一条命令构建全部：turbo 会并行并做缓存
+      # ↘ 全量构建，命中 turbo 缓存后很快
       - name: Turbo build (CI)
         run: pnpm build:ci
+
+      # 可选：打印产物，排查路径问题
+      - name: Debug build outputs
+        run: |
+          echo "== main/dist =="
+          ls -la main/dist || true
+          echo "== vue-demo/dist =="
+          ls -la web/vue-demo/dist || true
+          echo "== react-demo/dist =="
+          ls -la web/react-demo/dist || true
 
       # 组装站点
       - name: Assemble site
         run: |
-              mkdir -p _site/apps/vue-demo _site/apps/react-demo
-              [ -d main/dist ] && cp -r main/dist/* _site/ || (echo "main/dist missing"; exit 1)
-              [ -d web/vue-demo/dist ] && cp -r web/vue-demo/dist/* _site/apps/vue-demo/ || (echo "vue-demo/dist missing"; exit 1)
-              [ -d web/react-demo/dist ] && cp -r web/react-demo/dist/* _site/apps/react-demo/ || (echo "react-demo/dist missing"; exit 1)
-              cat > _site/micro-apps.json <<EOF
-              {
-                "vue-demo":   { "url": "/$REPO/apps/vue-demo/" },
-                "react-demo": { "url": "/$REPO/apps/react-demo/" }
-              }
-              EOF
-              cp _site/index.html _site/404.html
-              echo "== micro-apps.json ==" && cat _site/micro-apps.json
+          mkdir -p _site/apps/vue-demo _site/apps/react-demo
+          cp -r main/dist/*           _site/
+          cp -r web/vue-demo/dist/*   _site/apps/vue-demo/
+          cp -r web/react-demo/dist/* _site/apps/react-demo/
+          cat > _site/micro-apps.json <<EOF
+          {
+            "vue-demo":   { "url": "/$REPO/apps/vue-demo/" },
+            "react-demo": { "url": "/$REPO/apps/react-demo/" }
+          }
+          EOF
+          # SPA history 刷新兜底
+          cp _site/index.html _site/404.html
+          echo "== micro-apps.json ==" && cat _site/micro-apps.json
 
       - uses: actions/upload-pages-artifact@v3
         with:
