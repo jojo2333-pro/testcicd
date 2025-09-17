@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite",
     "build": "vite build",
-    "build:cli": "cross-env BASE_PATH=/${REPO}/ vite build",
+    "build:ci": "cross-env BASE_PATH=/${REPO}/ vite build",
     "clean": "rimraf dist"
   },
   "keywords": [],
