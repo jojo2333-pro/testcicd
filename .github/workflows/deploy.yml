@@ -22,10 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
 
+      # 👇 这里跟 package.json 保持一致，pnpm 10.11.1
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
+        with:
+          version: 10.11.1
 
       - uses: actions/setup-node@v4
         with:
@@ -41,8 +44,10 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-${{ github.ref }}-
             turbo-${{ runner.os }}-
+
       - name: Configure pnpm store
         run: pnpm config set store-dir .pnpm-store
+
       - name: Cache pnpm store
         uses: actions/cache@v4
         with:
@@ -75,7 +80,8 @@ jobs:
           echo "== micro-apps.json ==" && cat _site/micro-apps.json
 
       - uses: actions/upload-pages-artifact@v3
-        with: { path: _site }
+        with:
+          path: _site
 
   deploy:
     runs-on: ubuntu-latest
